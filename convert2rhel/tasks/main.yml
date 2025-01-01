@@ -29,7 +29,7 @@
   file:
     path: /etc/rhsm/ca
     state: directory
-    mode: '0755'
+    mode: "0755"
   tags: setup
 
 - name: Download Red Hat UEP certificate
@@ -76,7 +76,7 @@
 # Convert CentOS to RHEL
 - name: Run Convert2RHEL
   command: >
-    convert2rhel --auto-attach --username="{{ rhel_username }}"
+    convert2rhel --auto-attach --username="{{ rhel_username }}" -y
   ignore_errors: yes
   tags: convert
 
