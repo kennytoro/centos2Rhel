@@ -68,8 +68,8 @@
     dest: /etc/convert2rhel.ini
     content: |
       [subscription_manager]
-      username = "{{ rhel_username }}"
-      password = "{{ rhel_password }}"
+      username = {{ rhel_username }}
+      password = {{ rhel_password }}
     mode: "0600"
   tags: config
 
