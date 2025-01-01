@@ -1,0 +1,135 @@
+---
+# Pre-check: Ensure the host is running CentOS
+- name: Verify CentOS version
+  command: cat /etc/centos-release
+  register: centos_version
+  failed_when: "'CentOS' not in centos_version.stdout"
+  tags: precheck
+
+- name: Display CentOS version
+  debug:
+    msg: "CentOS version is: {{ centos_version.stdout }}"
+  tags: precheck
+
+# Update system packages to the latest versions
+- name: Update system packages
+  yum:
+    name: "*"
+    state: latest
+  tags: update
+
+# Download and configure required files
+- name: Download Red Hat GPG key
+  get_url:
+    url: "https://www.redhat.com/security/data/fd431d51.txt"
+    dest: "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
+  tags: setup
+
+- name: Download Red Hat UEP certificate
+  get_url:
+    url: "https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem"
+    dest: "/etc/rhsm/ca/redhat-uep.pem"
+    create_directories: yes
+  tags: setup
+
+- name: Download Convert2RHEL repository definition
+  get_url:
+    url: "https://ftp.redhat.com/redhat/convert2rhel/7/convert2rhel.repo"
+    dest: "/etc/yum.repos.d/convert2rhel.repo"
+  tags: setup
+
+- name: Verify Convert2RHEL repository configuration
+  command: yum repoinfo convert2rhel-for-rhel-7-rpms
+  register: repo_info
+  changed_when: false
+  tags: setup
+
+- name: Display repository info
+  debug:
+    msg: "Repository info: {{ repo_info.stdout }}"
+  tags: setup
+
+# Install Convert2RHEL tool
+- name: Install Convert2RHEL
+  yum:
+    name: convert2rhel
+    state: present
+  tags: install
+
+# Configure Convert2RHEL
+- name: Create Convert2RHEL configuration file
+  copy:
+    dest: /etc/convert2rhel.ini
+    content: |
+      [subscription_manager]
+      username = "{{ rhel_username }}"
+      password = "{{ rhel_password }}"
+    mode: "0600"
+  tags: config
+
+# Convert CentOS to RHEL
+- name: Run Convert2RHEL
+  command: >
+    convert2rhel --auto-attach --username="{{ rhel_username }}"
+  ignore_errors: yes
+  tags: convert
+
+# Reboot to apply changes
+- name: Reboot the system
+  reboot:
+    msg: "Rebooting to complete the conversion to RHEL 7."
+    reboot_timeout: 300
+  tags: reboot
+
+# Post-check: Validate conversion
+- name: Verify the new OS version
+  command: cat /etc/*release*
+  register: new_os_version
+  tags: postcheck
+
+- name: Display the new OS version
+  debug:
+    msg: "New OS version: {{ new_os_version.stdout }}"
+  tags: postcheck
+
+- name: Verify Red Hat subscription status
+  command: subscription-manager status
+  register: subscription_status
+  tags: postcheck
+
+- name: Display subscription status
+  debug:
+    msg: "Subscription status: {{ subscription_status.stdout }}"
+  tags: postcheck
+
+- name: Verify enabled repositories
+  command: yum repolist
+  register: repo_list
+  tags: postcheck
+
+- name: Display enabled repositories
+  debug:
+    msg: "Enabled repositories: {{ repo_list.stdout }}"
+  tags: postcheck
+
+# Cleanup tasks
+- name: Remove GPG key
+  ansible.builtin.file:
+    path: /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+    state: absent
+  when: convert_gpg_key_remove
+  tags: cleanup
+
+- name: Remove Convert2RHEL repository
+  ansible.builtin.file:
+    path: /etc/yum.repos.d/convert2rhel.repo
+    state: absent
+  when: convert_convert2rhel_repo_remove
+  tags: cleanup
+
+- name: Remove Convert2RHEL package
+  ansible.builtin.package:
+    name: convert2rhel
+    state: absent
+  when: convert_convert2rhel_package_remove
+  tags: cleanup
