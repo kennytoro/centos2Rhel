@@ -1,2 +1,22 @@
 ---
-# handlers file for convert2rhel
+# Cleanup tasks
+- name: Remove GPG key
+  ansible.builtin.file:
+    path: /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+    state: absent
+  when: convert_gpg_key_remove
+  tags: cleanup
+
+- name: Remove Convert2RHEL repository
+  ansible.builtin.file:
+    path: /etc/yum.repos.d/convert2rhel.repo
+    state: absent
+  when: convert_convert2rhel_repo_remove
+  tags: cleanup
+
+- name: Remove Convert2RHEL package
+  ansible.builtin.package:
+    name: convert2rhel
+    state: absent
+  when: convert_convert2rhel_package_remove
+  tags: cleanup
