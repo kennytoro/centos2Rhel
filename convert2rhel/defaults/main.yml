@@ -4,6 +4,6 @@ rhel_org: "<organization_ID>"
 rhel_activation_key: "<activation_key>"
 rhel_username: "<username>"
 rhel_password: "<password>"
-convert_gpg_key_remove: true
-convert_convert2rhel_repo_remove: true
-convert_convert2rhel_package_remove: true
+convert_gpg_key_remove: false
+convert_convert2rhel_repo_remove: false
+convert_convert2rhel_package_remove: false
