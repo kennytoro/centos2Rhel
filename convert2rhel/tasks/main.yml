@@ -76,7 +76,7 @@
 # Convert CentOS to RHEL
 - name: Run Convert2RHEL
   command: >
-    convert2rhel --auto-attach --username="{{ rhel_username }}" -y
+    convert2rhel --auto-attach --username="{{ rhel_username }}" --config-file /etc/convert2rhel.ini -y
   ignore_errors: yes
   tags: convert
 
