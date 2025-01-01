@@ -76,7 +76,7 @@
 # Convert CentOS to RHEL
 - name: Run Convert2RHEL
   shell: >
-    convert2rhel --auto-attach --username="{{ rhel_username }}" --config-file /etc/convert2rhel.ini -y
+    convert2rhel --auto-attach --username={{ rhel_username }} --config-file /etc/convert2rhel.ini -y
   changed_when: convert2rhel.rc != 0
   notify:
     - Remove GPG key
