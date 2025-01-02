@@ -24,7 +24,7 @@
 
     - name: Download Convert2RHEL repository definition
       get_url:
-        url: "https://ftp.redhat.com/redhat/convert2rhel/8/convert2rhel.repo"
+        url: "https://ftp.redhat.com/redhat/convert2rhel/7/convert2rhel.repo"
         dest: "/etc/yum.repos.d/convert2rhel.repo"
       tags: setup
 
