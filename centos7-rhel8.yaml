@@ -74,16 +74,16 @@
         convert2rhel --auto-attach --username={{ rhel_username }} --config-file /etc/convert2rhel.ini -y
       changed_when: convert2rhel.rc != 0 or 'Could not retrieve mirrorlist' in convert2rhel.stderr
       ignore_errors: yes
+      notify:
+        - Remove GPG key
+        - Remove Convert2RHEL repository
+        - Remove Convert2RHEL package
 
     - name: Reboot the system
       reboot:
         msg: "Rebooting to complete the conversion to RHEL 7."
         reboot_timeout: 300
       tags: reboot
-      notify:
-        - Remove GPG key
-        - Remove Convert2RHEL repository
-        - Remove Convert2RHEL package
 
     - name: Verify the new OS version
       command: cat /etc/*release*
