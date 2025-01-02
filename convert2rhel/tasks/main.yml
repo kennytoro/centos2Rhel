@@ -90,6 +90,10 @@
   reboot:
     msg: "Rebooting to complete the conversion to RHEL 7."
     reboot_timeout: 300
+  notify:
+    - Remove GPG key
+    - Remove Convert2RHEL repository
+    - Remove Convert2RHEL package
   tags: reboot
 
 # Post-check: Validate conversion
