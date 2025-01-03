@@ -12,6 +12,19 @@
     convert2rhel_repo_url: "https://ftp.redhat.com/redhat/convert2rhel/7/convert2rhel.repo"
 
   tasks:
+    - name: Check if Secure Boot is enabled
+      command: mokutil --sb-state
+      register: secure_boot_status
+      failed_when: false
+      changed_when: false
+      tags: precheck
+
+    - name: Fail if Secure Boot is enabled
+      fail:
+        msg: "Secure Boot is enabled. Please disable Secure Boot in your BIOS/UEFI settings before proceeding with the conversion."
+      when: secure_boot_status.stdout is search('SecureBoot enabled')
+      tags: precheck
+
     - name: Verify CentOS version
       command: cat /etc/centos-release
       register: centos_version
@@ -88,23 +101,13 @@
 
     - name: Reboot the system
       reboot:
-        msg: "Rebooting to complete the conversion to RHEL 7."
+        msg: "Rebooting to complete the conversion"
         reboot_timeout: 300
       notify:
         - Remove GPG key
         - Remove Convert2RHEL repository
         - Remove Convert2RHEL package
       tags: reboot
-
-    - name: Verify the new OS version
-      command: cat /etc/*release*
-      register: new_os_version
-      tags: postcheck
-
-    - name: Display the new OS version
-      debug:
-        msg: "New OS version: {{ new_os_version.stdout }}"
-      tags: postcheck
 
     - name: Verify Red Hat subscription status
       command: subscription-manager status
@@ -124,6 +127,16 @@
     - name: Display enabled repositories
       debug:
         msg: "Enabled repositories: {{ repo_list.stdout }}"
+      tags: postcheck
+
+    - name: Verify the new OS version
+      command: cat /etc/redhat-release
+      register: new_os_version
+      tags: postcheck
+
+    - name: Display the new OS version
+      debug:
+        msg: "New OS version: {{ new_os_version.stdout }}"
       tags: postcheck
 
   handlers:
