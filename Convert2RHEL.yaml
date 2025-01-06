@@ -9,83 +9,93 @@
     rhel_password: MY_PASSWORD
     gpg_key_url: "https://www.redhat.com/security/data/fd431d51.txt"
     uep_cert_url: "https://ftp.redhat.com/redhat/convert2rhel/redhat-uep.pem"
-    convert2rhel_repo_url: "https://ftp.redhat.com/redhat/convert2rhel/7/convert2rhel.repo"
 
   tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+        gather_subset:
+          - "os_family"
+          - "distribution"
+          - "distribution_major_version"
+
+    - name: Set Convert2RHEL repository URL based on OS version
+      ansible.builtin.set_fact:
+        convert2rhel_repo_url: "https://ftp.redhat.com/redhat/convert2rhel/{{ ansible_distribution_major_version }}/convert2rhel.repo"
+
     - name: Check if Secure Boot is enabled
-      command: mokutil --sb-state
+      ansible.builtin.command: mokutil --sb-state
       register: secure_boot_status
       failed_when: false
       changed_when: false
       tags: precheck
 
     - name: Fail if Secure Boot is enabled
-      fail:
+      ansible.builtin.fail:
         msg: "Secure Boot is enabled. Please disable Secure Boot in your BIOS/UEFI settings before proceeding with the conversion."
       when: secure_boot_status.stdout is search('SecureBoot enabled')
       tags: precheck
 
     - name: Verify CentOS version
-      command: cat /etc/centos-release
+      ansible.builtin.command: cat /etc/centos-release
       register: centos_version
       failed_when: "'CentOS' not in centos_version.stdout"
       tags: precheck
 
     - name: Display CentOS version
-      debug:
+      ansible.builtin.debug:
         msg: "CentOS version is: {{ centos_version.stdout }}"
       tags: precheck
 
     - name: Update system packages
-      yum:
+      ansible.builtin.yum:
         name: "*"
         state: latest
       tags: update
 
     - name: Download Red Hat GPG key
-      get_url:
+      ansible.builtin.get_url:
         url: "{{ gpg_key_url }}"
         dest: "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
       tags: setup
 
     - name: Ensure /etc/rhsm/ca directory exists
-      file:
+      ansible.builtin.file:
         path: /etc/rhsm/ca
         state: directory
         mode: "0755"
       tags: setup
 
     - name: Download Red Hat UEP certificate
-      get_url:
+      ansible.builtin.get_url:
         url: "{{ uep_cert_url }}"
         dest: "/etc/rhsm/ca/redhat-uep.pem"
       tags: setup
 
     - name: Download Convert2RHEL repository definition
-      get_url:
+      ansible.builtin.get_url:
         url: "{{ convert2rhel_repo_url }}"
         dest: "/etc/yum.repos.d/convert2rhel.repo"
       tags: setup
 
     - name: Verify Convert2RHEL repository configuration
-      command: yum repoinfo convert2rhel-for-rhel-7-rpms
+      ansible.builtin.command: yum repoinfo convert2rhel-for-rhel-{{ ansible_distribution_major_version }}-rpms
       register: repo_info
       changed_when: false
       tags: setup
 
     - name: Display repository info
-      debug:
+      ansible.builtin.debug:
         msg: "Repository info: {{ repo_info.stdout }}"
       tags: setup
 
     - name: Install Convert2RHEL
-      yum:
+      ansible.builtin.yum:
         name: convert2rhel
         state: present
       tags: install
 
     - name: Create Convert2RHEL configuration file
-      copy:
+      ansible.builtin.copy:
         dest: /etc/convert2rhel.ini
         content: |
           [subscription_manager]
@@ -95,12 +105,12 @@
       tags: config
 
     - name: Run Convert2RHEL
-      shell: >
+      ansible.builtin.shell: >
         convert2rhel --auto-attach --username={{ rhel_username }} --config-file /etc/convert2rhel.ini -y
       ignore_errors: yes
 
     - name: Reboot the system
-      reboot:
+      ansible.builtin.reboot:
         msg: "Rebooting to complete the conversion"
         reboot_timeout: 300
       notify:
@@ -110,32 +120,32 @@
       tags: reboot
 
     - name: Verify Red Hat subscription status
-      command: subscription-manager status
+      ansible.builtin.command: subscription-manager status
       register: subscription_status
       tags: postcheck
 
     - name: Display subscription status
-      debug:
+      ansible.builtin.debug:
         msg: "Subscription status: {{ subscription_status.stdout }}"
       tags: postcheck
 
     - name: Verify enabled repositories
-      command: yum repolist
+      ansible.builtin.command: yum repolist
       register: repo_list
       tags: postcheck
 
     - name: Display enabled repositories
-      debug:
+      ansible.builtin.debug:
         msg: "Enabled repositories: {{ repo_list.stdout }}"
       tags: postcheck
 
     - name: Verify the new OS version
-      command: cat /etc/redhat-release
+      ansible.builtin.command: cat /etc/redhat-release
       register: new_os_version
       tags: postcheck
 
     - name: Display the new OS version
-      debug:
+      ansible.builtin.debug:
         msg: "New OS version: {{ new_os_version.stdout }}"
       tags: postcheck
 

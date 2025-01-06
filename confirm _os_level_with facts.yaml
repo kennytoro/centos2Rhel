@@ -1,0 +1,23 @@
+---
+- name: Gather and display OS version facts
+  hosts: all
+  become: yes
+  tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+        gather_subset:
+          - "os_family"
+          - "distribution"
+          - "distribution_major_version"
+
+    - name: Display OS family
+      ansible.builtin.debug:
+        msg: "OS Family: {{ ansible_os_family }}"
+
+    - name: Display OS distribution
+      ansible.builtin.debug:
+        msg: "OS Distribution: {{ ansible_distribution }}"
+
+    - name: Display OS distribution major version
+      ansible.builtin.debug:
+        msg: "OS Distribution Major Version: {{ ansible_distribution_major_version }}"
