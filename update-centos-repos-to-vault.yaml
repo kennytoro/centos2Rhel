@@ -35,3 +35,8 @@
 
     - name: Clean yum cache
       ansible.builtin.command: yum clean all
+
+    - name: Update all packages using yum
+      ansible.builtin.yum:
+        name: '*'
+        state: latest
